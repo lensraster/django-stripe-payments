@@ -522,8 +522,10 @@ class Customer(StripeObject):
                 quantity = 1
         cu = self.stripe_customer
         
+        items_for_metadata = []
         for item in order.cart.products.all():
             item.create_stripe_invoice_item(self.stripe_customer.id)
+            items_for_metadata.append(item.as_string())
 
         subscription_params = {}
         if trial_days:
@@ -535,6 +537,8 @@ class Customer(StripeObject):
         subscription_params["plan"] = order.cart.product_set.stripe_id
         subscription_params["quantity"] = quantity
         subscription_params["coupon"] = coupon
+        subscription_params["metadata"] = {
+                        "additional_products": ', '.join(items_for_metadata)}
         
         new_sub = cu.subscriptions.create(**subscription_params)
 
