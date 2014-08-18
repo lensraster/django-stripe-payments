@@ -36,6 +36,7 @@ from .utils import (
     convert_tstamp,
     convert_amount_for_db,
     convert_amount_for_api,
+    submit_invoice_items
 )
 
 
@@ -180,7 +181,9 @@ class Event(StripeObject):
                 )
             elif self.kind.startswith("customer.subscription."):
                 if self.customer:
-                    self.customer.sync_current_subscription()
+                    # TODO: this is a good thing to be reimplemented some day
+                    #self.customer.sync_current_subscription()
+                    pass
             elif self.kind == "customer.deleted":
                 self.customer.purge()
             self.send_signal()
@@ -522,11 +525,8 @@ class Customer(StripeObject):
                 quantity = 1
         cu = self.stripe_customer
         
-        items_for_metadata = []
-        for item in order.cart.products.all():
-            item.create_stripe_invoice_item(self.stripe_customer.id)
-            items_for_metadata.append(item.as_string())
-
+        submit_invoice_items(self.stripe_customer.id, order)
+        
         subscription_params = {}
         if trial_days:
             subscription_params["trial_end"] = \
@@ -537,6 +537,11 @@ class Customer(StripeObject):
         subscription_params["plan"] = order.cart.product_set.stripe_id
         subscription_params["quantity"] = quantity
         subscription_params["coupon"] = coupon
+        
+        items_for_metadata = []
+        for item in order.cart.products.all():
+            items_for_metadata.append(item.as_string())
+        
         subscription_params["metadata"] = {
                         "additional_products": ', '.join(items_for_metadata)}
         
