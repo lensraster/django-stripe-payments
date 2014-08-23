@@ -663,6 +663,9 @@ class CurrentSubscription(models.Model):
         self.status = None
         self.quantity = 0
         self.amount = 0
+    
+    def __unicode__(self):
+        return self.stripe_id
 
 
 class Invoice(models.Model):
