@@ -517,7 +517,7 @@ class Customer(StripeObject):
         )
 
     def subscribe(self, order, quantity=None, trial_days=None,
-                  charge_immediately=True, token=None, coupon=None):
+                  charge_immediately=True, token=None):
         if quantity is None:
             if PLAN_QUANTITY_CALLBACK is not None:
                 quantity = PLAN_QUANTITY_CALLBACK(self)
@@ -536,7 +536,7 @@ class Customer(StripeObject):
 
         subscription_params["plan"] = order.cart.product_set.stripe_id
         subscription_params["quantity"] = quantity
-        subscription_params["coupon"] = coupon
+        subscription_params["coupon"] = order.cart.coupon_code
         
         items_for_metadata = []
         for item in order.cart.products.all():
