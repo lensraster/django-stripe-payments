@@ -525,7 +525,8 @@ class Customer(StripeObject):
                 quantity = 1
         cu = self.stripe_customer
         
-        submit_invoice_items(self.stripe_customer.id, order)
+        cart = order.get_cart()
+        submit_invoice_items(self.stripe_customer.id, cart)
         
         subscription_params = {}
         if trial_days:
@@ -534,12 +535,12 @@ class Customer(StripeObject):
         if token:
             subscription_params["card"] = token
 
-        subscription_params["plan"] = order.cart.product_set.stripe_id
+        subscription_params["plan"] = cart.product_set.stripe_id
         subscription_params["quantity"] = quantity
-        subscription_params["coupon"] = order.cart.coupon_code
+        subscription_params["coupon"] = cart.coupon_code
         
         items_for_metadata = []
-        for item in order.cart.products.all():
+        for item in cart.products.all():
             items_for_metadata.append(item.as_string())
         
         subscription_params["metadata"] = {
@@ -571,7 +572,7 @@ class Customer(StripeObject):
         
         if charge_immediately:
             self.send_invoice()
-        subscription_made.send(sender=self, plan=order.cart.product_set.stripe_id, stripe_response=new_sub)
+        subscription_made.send(sender=self, plan=cart.product_set.stripe_id, stripe_response=new_sub)
         return new_sub
 
     def charge(self, amount, currency="usd", description=None,

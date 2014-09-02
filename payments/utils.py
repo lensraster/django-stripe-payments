@@ -67,8 +67,8 @@ def convert_amount_for_db(amount, currency="usd"):
 def convert_amount_for_api(amount, currency="usd"):
     return int(amount * 100) if currency.lower() not in ZERO_DECIMAL_CURRENCIES else int(amount)
 
-def submit_invoice_items(customer_id, order, invoice_id=None):
-    for payment in order.cart.service_payments:
+def submit_invoice_items(customer_id, cart, invoice_id=None):
+    for payment in cart.service_payments:
         stripe.InvoiceItem.create(
                 customer=customer_id,
                 amount=int(payment.price * 100),
@@ -76,7 +76,7 @@ def submit_invoice_items(customer_id, order, invoice_id=None):
                 description=payment.title,
                 invoice=invoice_id)
         
-    for item in order.cart.products.all():
+    for item in cart.products.all():
         stripe.InvoiceItem.create(
                 customer=customer_id,
                 amount=int(item.total * 100),
