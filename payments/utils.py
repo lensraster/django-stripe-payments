@@ -68,18 +68,21 @@ def convert_amount_for_api(amount, currency="usd"):
     return int(amount * 100) if currency.lower() not in ZERO_DECIMAL_CURRENCIES else int(amount)
 
 def submit_invoice_items(customer_id, cart, invoice_id=None):
+    items = []
     for payment in cart.service_payments:
-        stripe.InvoiceItem.create(
+        items.append(stripe.InvoiceItem.create(
                 customer=customer_id,
                 amount=int(payment.price * 100),
                 currency="usd",
                 description=payment.title,
-                invoice=invoice_id)
+                invoice=invoice_id))
         
     for item in cart.products.all():
-        stripe.InvoiceItem.create(
+        items.append(stripe.InvoiceItem.create(
                 customer=customer_id,
                 amount=int(item.total * 100),
                 currency="usd",
                 description=item.as_string(),
-                invoice=invoice_id)
+                invoice=invoice_id))
+    
+    return items

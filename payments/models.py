@@ -526,27 +526,33 @@ class Customer(StripeObject):
         cu = self.stripe_customer
         
         cart = order.get_cart()
-        submit_invoice_items(self.stripe_customer.id, cart)
         
-        subscription_params = {}
-        if trial_days:
-            subscription_params["trial_end"] = \
-                datetime.datetime.utcnow() + datetime.timedelta(days=trial_days)
-        if token:
-            subscription_params["card"] = token
-
-        subscription_params["plan"] = cart.product_set.stripe_id
-        subscription_params["quantity"] = quantity
-        subscription_params["coupon"] = cart.coupon_code
+        invoice_items = submit_invoice_items(self.stripe_customer.id, cart)
         
-        items_for_metadata = []
-        for item in cart.products.all():
-            items_for_metadata.append(item.as_string())
-        
-        subscription_params["metadata"] = {
-                        "additional_products": ', '.join(items_for_metadata)}
-        
-        new_sub = cu.subscriptions.create(**subscription_params)
+        try:
+            subscription_params = {}
+            if trial_days:
+                subscription_params["trial_end"] = \
+                    datetime.datetime.utcnow() + datetime.timedelta(days=trial_days)
+            if token:
+                subscription_params["card"] = token
+    
+            subscription_params["plan"] = cart.product_set.stripe_id
+            subscription_params["quantity"] = quantity
+            subscription_params["coupon"] = cart.coupon_code
+            
+            items_for_metadata = []
+            for item in cart.products.all():
+                items_for_metadata.append(item.as_string())
+            
+            subscription_params["metadata"] = {
+                            "additional_products": ', '.join(items_for_metadata)}
+            
+            new_sub = cu.subscriptions.create(**subscription_params)
+        except stripe.error.CardError, e:
+            for item in invoice_items:
+                item.delete()
+            raise
 
         if token:
             # Refetch the stripe customer so we have the updated card info
